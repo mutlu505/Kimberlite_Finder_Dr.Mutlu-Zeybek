@@ -939,6 +939,402 @@ print("=" * 70)
 
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.patches import FancyArrowPatch
+from mpl_toolkits.mplot3d import proj3d
+import matplotlib.patches as mpatches
+
+
+class Arrow3D(FancyArrowPatch):
+    """Custom 3D arrow for annotations"""
+
+    def __init__(self, xs, ys, zs, *args, **kwargs):
+        super().__init__((0, 0), (0, 0), *args, **kwargs)
+        self._verts3d = xs, ys, zs
+
+    def do_3d_projection(self, renderer=None):
+        xs3d, ys3d, zs3d = self._verts3d
+        xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, self.axes.M)
+        self.set_positions((xs[0], ys[0]), (xs[1], ys[1]))
+        return np.min(zs)
+
+
+def create_kimberlite_pipe():
+    """Generate 3D coordinates for a kimberlite pipe with root, diatreme, and crater zones"""
+
+    # Parameters for each zone
+    # Root zone (hypabyssal) - irregular, dyke-like
+    z_root = np.linspace(0, 100, 50)
+    theta_root = np.linspace(0, 2 * np.pi, 30)
+    theta_root, z_root = np.meshgrid(theta_root, z_root)
+
+    # Irregular radius with variations and elongation
+    r_root_base = 20 + 5 * np.sin(theta_root * 2) + 3 * np.cos(theta_root * 3)
+    r_root_top = 35 + 8 * np.sin(theta_root * 1.5 + 1) + 5 * np.cos(theta_root * 2.5)
+
+    # Gradual transition from bottom to top with irregularity
+    t_root = z_root / 100
+    r_root = r_root_base + (r_root_top - r_root_base) * t_root
+
+    # Add irregular features - dikes and protrusions
+    r_root += 8 * np.sin(z_root / 10) * np.cos(theta_root * 2) * np.exp(-z_root / 50)
+
+    x_root = r_root * np.cos(theta_root)
+    y_root = r_root * np.sin(theta_root)
+    z_root = z_root - 100  # Shift so root is below surface
+
+    # Diatreme zone - steep-sided inverted cone with some irregularity
+    z_diatreme = np.linspace(100, 250, 60)
+    theta_diatreme = np.linspace(0, 2 * np.pi, 40)
+    theta_diatreme, z_diatreme = np.meshgrid(theta_diatreme, z_diatreme)
+
+    # Expand upward with slight irregularity
+    r_diatreme_base = 35 + 3 * np.sin(theta_diatreme * 2)
+    r_diatreme_top = 80 + 8 * np.sin(theta_diatreme * 1.3 + 0.5)
+
+    t_diatreme = (z_diatreme - 100) / 150
+    r_diatreme = r_diatreme_base + (r_diatreme_top - r_diatreme_base) * t_diatreme
+
+    # Add structural features - faults and fractures
+    r_diatreme += (
+        5 * np.sin(z_diatreme / 20) * np.cos(theta_diatreme * 3 + z_diatreme / 30)
+    )
+
+    x_diatreme = r_diatreme * np.cos(theta_diatreme)
+    y_diatreme = r_diatreme * np.sin(theta_diatreme)
+    z_diatreme = z_diatreme
+
+    # Crater zone - flatter, wider with complex fill
+    z_crater = np.linspace(250, 320, 40)
+    theta_crater = np.linspace(0, 2 * np.pi, 50)
+    theta_crater, z_crater = np.meshgrid(theta_crater, z_crater)
+
+    # Complex crater geometry with irregular rim
+    r_crater_base = 80 + 10 * np.sin(theta_crater * 1.5)
+    r_crater_top = (
+        120 + 15 * np.sin(theta_crater * 1.7 + 0.3) + 8 * np.cos(theta_crater * 2.5)
+    )
+
+    t_crater = (z_crater - 250) / 70
+    r_crater = r_crater_base + (r_crater_top - r_crater_base) * t_crater
+
+    # Add complexity - crater rim irregularities
+    r_crater += 6 * np.sin(z_crater / 15) * np.cos(theta_crater * 2 + z_crater / 25)
+
+    x_crater = r_crater * np.cos(theta_crater)
+    y_crater = r_crater * np.sin(theta_crater)
+    z_crater = z_crater
+
+    # Add country rock - a simple box
+    cr_width = 200
+    cr_depth = 200
+    cr_height = 400
+
+    # Create country rock surfaces (simplified)
+    x_country = np.array([-cr_width / 2, cr_width / 2, cr_width / 2, -cr_width / 2])
+    y_country = np.array([-cr_depth / 2, -cr_depth / 2, cr_depth / 2, cr_depth / 2])
+    z_country_bottom = -120 * np.ones_like(x_country)
+    z_country_top = 350 * np.ones_like(x_country)
+
+    return {
+        "root": (x_root, y_root, z_root),
+        "diatreme": (x_diatreme, y_diatreme, z_diatreme),
+        "crater": (x_crater, y_crater, z_crater),
+        "country_rock": (x_country, y_country, z_country_bottom, z_country_top),
+    }
+
+
+def plot_kimberlite_3d(pipe_data):
+    """Create 3D visualization of the kimberlite pipe"""
+
+    fig = plt.figure(figsize=(14, 12))
+    ax = fig.add_subplot(111, projection="3d")
+
+    # Extract data
+    x_root, y_root, z_root = pipe_data["root"]
+    x_diatreme, y_diatreme, z_diatreme = pipe_data["diatreme"]
+    x_crater, y_crater, z_crater = pipe_data["crater"]
+
+    # Plot root zone (hypabyssal) - darker, irregular
+    surf_root = ax.plot_surface(
+        x_root,
+        y_root,
+        z_root,
+        cmap="Reds",
+        alpha=0.8,
+        linewidth=0,
+        antialiased=True,
+        label="Root Zone",
+    )
+    surf_root.set_facecolor((0.6, 0.2, 0.2, 0.7))
+
+    # Plot diatreme zone - steep-sided, orange-brown
+    surf_diatreme = ax.plot_surface(
+        x_diatreme,
+        y_diatreme,
+        z_diatreme,
+        cmap="Oranges",
+        alpha=0.8,
+        linewidth=0,
+        antialiased=True,
+    )
+    surf_diatreme.set_facecolor((0.8, 0.5, 0.2, 0.7))
+
+    # Plot crater zone - wider, lighter
+    surf_crater = ax.plot_surface(
+        x_crater,
+        y_crater,
+        z_crater,
+        cmap="YlOrBr",
+        alpha=0.8,
+        linewidth=0,
+        antialiased=True,
+    )
+    surf_crater.set_facecolor((0.9, 0.7, 0.3, 0.7))
+
+    # Plot country rock (simple box outline)
+    x_country, y_country, z_bottom, z_top = pipe_data["country_rock"]
+
+    # Draw country rock faces (semi-transparent)
+    # Front face
+    x_front = np.array([-100, 100, 100, -100])
+    y_front = np.array([-100, -100, -100, -100])
+    z_front = np.array([-120, -120, 350, 350])
+    ax.plot_surface(
+        x_front.reshape(2, 2),
+        y_front.reshape(2, 2),
+        z_front.reshape(2, 2),
+        alpha=0.1,
+        color="gray",
+    )
+
+    # Back face
+    y_back = np.array([100, 100, 100, 100])
+    ax.plot_surface(
+        x_front.reshape(2, 2),
+        y_back.reshape(2, 2),
+        z_front.reshape(2, 2),
+        alpha=0.1,
+        color="gray",
+    )
+
+    # Add country rock labels
+    ax.text(
+        -120, 0, 100, "Country Rock", fontsize=10, alpha=0.5, rotation=90, color="gray"
+    )
+
+    # Add structural features - faults (lines)
+    for i in range(3):
+        x_fault = np.array([-80 + i * 80, 80 + i * 80])
+        y_fault = np.array([-60 + i * 40, 60 + i * 40])
+        z_fault = np.array([-100, 320])
+        ax.plot(x_fault, y_fault, z_fault, "k--", linewidth=1, alpha=0.3)
+
+    # Add annotations with arrows
+    # Root zone annotation
+    ax.text(
+        -100,
+        -80,
+        -50,
+        "Root Zone\n(Hypabyssal)",
+        fontsize=11,
+        fontweight="bold",
+        color="darkred",
+    )
+    arrow_root = Arrow3D(
+        [-60, -40],
+        [-40, -20],
+        [-30, -20],
+        mutation_scale=15,
+        lw=2,
+        arrowstyle="->",
+        color="darkred",
+    )
+    ax.add_artist(arrow_root)
+
+    # Diatreme zone annotation
+    ax.text(
+        90,
+        60,
+        150,
+        "Diatreme Zone\n(Steep-sided)",
+        fontsize=11,
+        fontweight="bold",
+        color="darkorange",
+    )
+    arrow_diatreme = Arrow3D(
+        [75, 65],
+        [50, 40],
+        [150, 160],
+        mutation_scale=15,
+        lw=2,
+        arrowstyle="->",
+        color="darkorange",
+    )
+    ax.add_artist(arrow_diatreme)
+
+    # Crater zone annotation
+    ax.text(
+        0,
+        130,
+        290,
+        "Crater Zone\n(Wider, Flatter)",
+        fontsize=11,
+        fontweight="bold",
+        color="saddlebrown",
+    )
+    arrow_crater = Arrow3D(
+        [0, 0],
+        [100, 90],
+        [290, 280],
+        mutation_scale=15,
+        lw=2,
+        arrowstyle="->",
+        color="saddlebrown",
+    )
+    ax.add_artist(arrow_crater)
+
+    # Add surface level
+    ax.plot([-150, 150], [-150, 150], [350, 350], "g--", linewidth=2, alpha=0.5)
+    ax.text(0, 0, 350, "Surface", fontsize=10, color="green")
+
+    # Add fault label
+    ax.text(60, -100, 200, "Faults", fontsize=10, alpha=0.6, color="gray")
+
+    # Create legend
+    from matplotlib.patches import Patch
+
+    legend_elements = [
+        Patch(facecolor=(0.6, 0.2, 0.2, 0.7), label="Root Zone (Hypabyssal)"),
+        Patch(facecolor=(0.8, 0.5, 0.2, 0.7), label="Diatreme Zone"),
+        Patch(facecolor=(0.9, 0.7, 0.3, 0.7), label="Crater Zone"),
+        Patch(facecolor="gray", alpha=0.3, label="Country Rock"),
+        Patch(facecolor="none", edgecolor="black", linestyle="--", label="Faults"),
+    ]
+    ax.legend(handles=legend_elements, loc="upper left", fontsize=10)
+
+    # Set labels
+    ax.set_xlabel("X (meters)", fontsize=12, labelpad=10)
+    ax.set_ylabel("Y (meters)", fontsize=12, labelpad=10)
+    ax.set_zlabel("Depth (meters)", fontsize=12, labelpad=6)
+
+    # Set title
+    plt.title(
+        "3D Kimberlite Pipe Model\nRoot, Diatreme, and Crater Zones",
+        fontsize=16,
+        weight="bold",
+        pad=20,
+    )
+
+    # Set viewing angle
+    ax.view_init(elev=25, azim=-60)
+
+    # Set axis limits
+    ax.set_xlim([-150, 150])
+    ax.set_ylim([-150, 150])
+    ax.set_zlim([-120, 370])
+
+    # Add depth scale
+    z_ticks = [-100, 0, 100, 200, 300, 350]
+    z_labels = ["-100", "0", "100", "200", "300", "Surface"]
+    ax.set_zticks(z_ticks)
+    ax.set_zticklabels(z_labels)
+
+    plt.tight_layout()
+    plt.savefig("kimberlite_3d_pipe.png", dpi=300, bbox_inches="tight")
+    plt.show()
+
+
+def create_animated_kimberlite():
+    """Create a rotating animation of the kimberlite pipe (requires matplotlib animation)"""
+
+    from matplotlib.animation import FuncAnimation
+
+    fig = plt.figure(figsize=(12, 10))
+    ax = fig.add_subplot(111, projection="3d")
+
+    # Generate pipe data
+    pipe_data = create_kimberlite_pipe()
+    x_root, y_root, z_root = pipe_data["root"]
+    x_diatreme, y_diatreme, z_diatreme = pipe_data["diatreme"]
+    x_crater, y_crater, z_crater = pipe_data["crater"]
+
+    # Plot all surfaces
+    surf_root = ax.plot_surface(
+        x_root,
+        y_root,
+        z_root,
+        facecolor=(0.6, 0.2, 0.2, 0.7),
+        linewidth=0,
+        antialiased=True,
+    )
+
+    surf_diatreme = ax.plot_surface(
+        x_diatreme,
+        y_diatreme,
+        z_diatreme,
+        facecolor=(0.8, 0.5, 0.2, 0.7),
+        linewidth=0,
+        antialiased=True,
+    )
+
+    surf_crater = ax.plot_surface(
+        x_crater,
+        y_crater,
+        z_crater,
+        facecolor=(0.9, 0.7, 0.3, 0.7),
+        linewidth=0,
+        antialiased=True,
+    )
+
+    ax.set_xlabel("X (m)")
+    ax.set_ylabel("Y (m)")
+    ax.set_zlabel("Depth (m)")
+    ax.set_title("Rotating Kimberlite Pipe Model", fontsize=14, weight="bold")
+    ax.set_xlim([-150, 150])
+    ax.set_ylim([-150, 150])
+    ax.set_zlim([-120, 370])
+
+    def update(frame):
+        ax.view_init(elev=25, azim=frame * 2)
+        return surf_root, surf_diatreme, surf_crater
+
+    anim = FuncAnimation(fig, update, frames=180, interval=50, blit=True)
+    anim.save("kimberlite_rotation.gif", writer="pillow", fps=20)
+    plt.show()
+
+    return anim
+
+
+# Main execution
+if __name__ == "__main__":
+    print("Generating 3D Kimberlite Pipe Model...")
+
+    # Create the pipe data
+    pipe_data = create_kimberlite_pipe()
+
+    # Plot the 3D visualization
+    plot_kimberlite_3d(pipe_data)
+
+    print("\n3D model created and saved as 'kimberlite_3d_pipe.png'")
+    print("\nPipe geometry summary:")
+    print(f"  Root zone depth: 100m")
+    print(f"  Diatreme zone: 100m - 250m")
+    print(f"  Crater zone: 250m - 320m")
+    print(f"  Total pipe height: ~420m")
+    print(f"  Crater diameter: ~240m")
+    print(f"  Root diameter: ~40-70m")
+
+    # Uncomment to create animated version
+    # print("\nCreating animated version...")
+    # anim = create_animated_kimberlite()
+    # print("Animation saved as 'kimberlite_rotation.gif'")
+
+
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
