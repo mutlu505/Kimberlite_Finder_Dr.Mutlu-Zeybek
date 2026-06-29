@@ -561,6 +561,389 @@ print("=" * 70)
 
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
+"""
+ZEYBEK-3 Model: Figure 2 - Workflow Diagram
+Simple flowchart showing the step-by-step algorithm
+"""
+
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+from matplotlib.patches import FancyBboxPatch, Circle, Rectangle, FancyArrowPatch
+import numpy as np
+
+# Set up the figure
+fig, ax = plt.subplots(1, 1, figsize=(14, 18))
+ax.set_xlim(-1, 11)
+ax.set_ylim(-1, 22)
+ax.set_aspect("equal")
+ax.axis("off")
+
+# ============================================================
+# DEFINE STYLES
+# ============================================================
+# Colors
+colors = {
+    "start_end": "#4CAF50",  # Green for Start/End
+    "process": "#2196F3",  # Blue for Process
+    "decision": "#FF9800",  # Orange for Decision
+    "data": "#9C27B0",  # Purple for Data Input
+    "output": "#F44336",  # Red for Output
+    "arrow": "#333333",  # Dark gray for arrows
+    "text": "#FFFFFF",  # White text
+    "box_bg": "#FFFFFF",  # White background for text
+}
+
+
+# ============================================================
+# FUNCTION TO CREATE ROUNDED BOXES
+# ============================================================
+def draw_box(
+    x,
+    y,
+    width,
+    height,
+    text,
+    color,
+    text_color="white",
+    fontsize=10,
+    fontweight="bold",
+    alpha=1.0,
+):
+    """Draw a rounded rectangle with text"""
+    box = FancyBboxPatch(
+        (x - width / 2, y - height / 2),
+        width,
+        height,
+        boxstyle="round,pad=0.15,rounding_size=0.15",
+        facecolor=color,
+        edgecolor="black",
+        linewidth=2,
+        alpha=alpha,
+    )
+    ax.add_patch(box)
+
+    # Add text
+    ax.text(
+        x,
+        y,
+        text,
+        ha="center",
+        va="center",
+        fontsize=fontsize,
+        fontweight=fontweight,
+        color=text_color,
+        wrap=True,
+    )
+    return box
+
+
+# ============================================================
+# FUNCTION TO DRAW ARROWS
+# ============================================================
+def draw_arrow(
+    x1,
+    y1,
+    x2,
+    y2,
+    color="#333333",
+    linewidth=2,
+    arrowstyle="->",
+    connectionstyle="arc3,rad=0.0",
+):
+    """Draw an arrow between two points"""
+    arrow = FancyArrowPatch(
+        (x1, y1),
+        (x2, y2),
+        arrowstyle=arrowstyle,
+        connectionstyle=connectionstyle,
+        color=color,
+        linewidth=linewidth,
+        mutation_scale=20,
+    )
+    ax.add_patch(arrow)
+
+
+# ============================================================
+# DRAW THE WORKFLOW
+# ============================================================
+
+# Step 1: START
+draw_box(5, 20.5, 3, 0.8, "START\nInitialize Targeting", colors["start_end"])
+
+# Arrow to Step 2
+draw_arrow(5, 20.1, 5, 19.2)
+
+# Step 2: Define Target
+draw_box(5, 18.5, 3.5, 0.8, "Define Target\nKimberlite Pipe (K)", colors["process"])
+
+# Arrow to Data Input
+draw_arrow(5, 18.1, 5, 17.2)
+
+# Step 3: Data Input - Lithological Data
+draw_box(5, 16.5, 3.5, 0.8, "Input Lithological Data\n(L1-L13)", colors["data"])
+
+# Arrow to next data
+draw_arrow(5, 16.1, 5, 15.2)
+
+# Step 4: Data Input - Fault Data
+draw_box(5, 14.5, 3.5, 0.8, "Input Fault Data\n(F1-F24)", colors["data"])
+
+# Arrow to mapping
+draw_arrow(5, 14.1, 5, 13.2)
+
+# Step 5: Mapping
+draw_box(
+    5,
+    12.5,
+    4,
+    0.8,
+    "Map L1 Unit & Faults\n(Crater-Facies Epiclastics)",
+    colors["process"],
+)
+
+# Arrow to decision
+draw_arrow(5, 12.1, 5, 11.2)
+
+# Step 6: Decision - Is L1 fault-bounded?
+draw_box(5, 10.5, 4.5, 0.9, "Is L1 bounded by\nF12 and F13?", colors["decision"])
+
+# Branch: YES (right arrow)
+draw_arrow(7.25, 10.5, 8.5, 10.5, connectionstyle="arc3,rad=0.0")
+ax.text(8.0, 10.8, "YES", fontsize=11, fontweight="bold", color="green")
+
+# Branch: NO (left arrow)
+draw_arrow(2.75, 10.5, 1.5, 10.5, connectionstyle="arc3,rad=0.0")
+ax.text(2.0, 10.8, "NO", fontsize=11, fontweight="bold", color="red")
+
+# NO branch: Stop/Return
+draw_box(1.5, 9.0, 3, 0.7, "STOP\nConditions Not Met", colors["start_end"])
+draw_arrow(1.5, 9.7, 1.5, 9.35)
+
+# YES branch: Calculate Centroid
+draw_box(8.5, 9.0, 3.5, 0.8, "Calculate Centroid\nof L1 Polygon", colors["process"])
+draw_arrow(8.5, 9.7, 8.5, 9.35)
+
+# Arrow to apply rule
+draw_arrow(8.5, 8.6, 8.5, 7.7)
+
+# Step 7: Apply Core Rule
+draw_box(8.5, 7.0, 3.5, 0.8, "Apply Core Rule\nK = Centroid(L1)", colors["process"])
+
+# Arrow to output
+draw_arrow(8.5, 6.6, 8.5, 5.7)
+
+# Step 8: Output
+draw_box(8.5, 5.0, 3.5, 0.8, "Output Target\nCoordinate K(x₁, y₁₄)", colors["output"])
+
+# Arrow to end
+draw_arrow(8.5, 4.6, 8.5, 3.7)
+
+# Step 9: END
+draw_box(8.5, 3.0, 2.5, 0.7, "END", colors["start_end"])
+
+# ============================================================
+# ADD NUMBERED STEPS
+# ============================================================
+step_positions = [
+    (0.5, 20.5),
+    (0.5, 18.5),
+    (0.5, 16.5),
+    (0.5, 14.5),
+    (0.5, 12.5),
+    (0.5, 10.5),
+    (6.0, 9.0),  # NO branch
+    (6.0, 7.0),  # YES branch centroid
+    (6.0, 5.0),  # Output
+    (6.0, 3.0),  # End
+]
+
+# Add step numbers on the left side
+for i, (x, y) in enumerate(step_positions[:6], 1):
+    ax.text(
+        x,
+        y,
+        f"Step {i}",
+        fontsize=10,
+        fontweight="bold",
+        color="#555555",
+        ha="center",
+        va="center",
+    )
+
+# YES branch steps (steps 6b, 7, 8, 9)
+step_labels = ["", "Step 6b", "Step 7", "Step 8", "Step 9"]
+for i, (label, (x, y)) in enumerate(zip(step_labels, step_positions[6:]), 6):
+    if label:
+        ax.text(
+            x,
+            y,
+            label,
+            fontsize=10,
+            fontweight="bold",
+            color="#555555",
+            ha="center",
+            va="center",
+        )
+
+# ============================================================
+# ADD LEGEND
+# ============================================================
+legend_y = 0.5
+legend_x = 5
+
+# Legend background
+legend_box = FancyBboxPatch(
+    (1, 0.9),
+    9,
+    1.2,
+    boxstyle="round,pad=0.1,rounding_size=0.05",
+    facecolor="white",
+    edgecolor="black",
+    linewidth=2,
+    alpha=0.95,
+)
+ax.add_patch(legend_box)
+
+# Legend title
+ax.text(5.5, 2.0, "LEGEND", fontsize=12, fontweight="bold", ha="center", va="center")
+
+# Legend items
+legend_items = [
+    ("Start/End", colors["start_end"]),
+    ("Process", colors["process"]),
+    ("Decision", colors["decision"]),
+    ("Data Input", colors["data"]),
+    ("Output", colors["output"]),
+]
+
+for i, (label, color) in enumerate(legend_items):
+    x_pos = 1.5 + (i * 1.7)
+    # Draw small colored box
+    box = FancyBboxPatch(
+        (x_pos - 0.4, 1.3),
+        0.8,
+        0.5,
+        boxstyle="round,pad=0.05,rounding_size=0.05",
+        facecolor=color,
+        edgecolor="black",
+        linewidth=1.5,
+    )
+    ax.add_patch(box)
+    ax.text(x_pos, 0.9, label, fontsize=8, ha="center", va="center")
+
+# ============================================================
+# ADD TITLE
+# ============================================================
+ax.text(
+    5,
+    21.8,
+    "ZEYBEK-3 Model: Workflow Diagram",
+    fontsize=18,
+    fontweight="bold",
+    ha="center",
+    va="center",
+)
+ax.text(
+    5,
+    21.3,
+    "Step-by-Step Algorithm for Kimberlite Pipe Targeting",
+    fontsize=12,
+    ha="center",
+    va="center",
+    style="italic",
+    color="#555555",
+)
+
+# ============================================================
+# ADD FORMULA BOX (optional enhancement)
+# ============================================================
+formula_box = FancyBboxPatch(
+    (0.5, 3.8),
+    3.5,
+    0.9,
+    boxstyle="round,pad=0.1,rounding_size=0.1",
+    facecolor="#FFF9C4",
+    edgecolor="#F57F17",
+    linewidth=2,
+    alpha=0.9,
+)
+ax.add_patch(formula_box)
+ax.text(
+    2.25,
+    4.45,
+    "K = Centroid(L1)",
+    fontsize=12,
+    fontweight="bold",
+    ha="center",
+    va="center",
+)
+ax.text(
+    2.25,
+    4.15,
+    "x₁ = (x₀ + x₂)/2",
+    fontsize=9,
+    ha="center",
+    va="center",
+    color="#555555",
+)
+ax.text(
+    2.25,
+    3.9,
+    "y₁₄ = (y₁₃ + y₁₅)/2",
+    fontsize=9,
+    ha="center",
+    va="center",
+    color="#555555",
+)
+
+# Arrow from formula to centroid calculation
+draw_arrow(
+    4.0, 4.25, 6.0, 4.25, connectionstyle="arc3,rad=0.0", linewidth=1.5, color="#F57F17"
+)
+
+# ============================================================
+# SAVE FIGURE
+# ============================================================
+plt.tight_layout()
+plt.savefig(
+    "ZEYBEK3_Figure2_Workflow.png", dpi=300, bbox_inches="tight", facecolor="white"
+)
+plt.savefig("ZEYBEK3_Figure2_Workflow.pdf", bbox_inches="tight", facecolor="white")
+
+plt.show()
+
+# ============================================================
+# PRINT SUMMARY
+# ============================================================
+print("=" * 70)
+print("ZEYBEK-3 MODEL: FIGURE 2 - WORKFLOW DIAGRAM")
+print("=" * 70)
+print("")
+print("Workflow Steps:")
+print("  Step 1: START - Initialize Targeting")
+print("  Step 2: Define Target - Kimberlite Pipe (K)")
+print("  Step 3: Input Lithological Data (L1-L13)")
+print("  Step 4: Input Fault Data (F1-F24)")
+print("  Step 5: Map L1 Unit & Faults")
+print("  Step 6: Decision - Is L1 bounded by F12 and F13?")
+print("     ├─ NO: STOP - Conditions Not Met")
+print("     └─ YES: Continue")
+print("  Step 7: Apply Core Rule - K = Centroid(L1)")
+print("  Step 8: Output Target Coordinate K(x₁, y₁₄)")
+print("  Step 9: END")
+print("")
+print("Output Files:")
+print("  - ZEYBEK3_Figure2_Workflow.png")
+print("  - ZEYBEK3_Figure2_Workflow.pdf")
+print("=" * 70)
+
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+
 
 
 
