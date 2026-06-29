@@ -1,4 +1,598 @@
 # Kimberlite_Finder_Dr.Mutlu-Zeybek
+
+"""
+ZEYBEK-3 Model: Geological Map with Distinct Lithology Colors
+COMPLETE LEGEND with All Units, Faults, and Structural Elements
+FIXED: Regular fault sequence F1-F24 properly displayed
+"""
+
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+from matplotlib.patches import Rectangle, Circle
+import numpy as np
+
+# Set up the figure
+fig, ax = plt.subplots(1, 1, figsize=(16, 13))
+ax.set_xlim(-1.5, 8.5)
+ax.set_ylim(-1.5, 29)
+ax.set_aspect("equal")
+
+# ============================================================
+# DISTINCT COLOR SCHEME FOR EACH LITHOLOGICAL UNIT (L1-L13)
+# ============================================================
+color_scheme = {
+    "L1": "#FF0000",  # Epiclastics - Pure RED
+    "L2": "#FF8C00",  # Tuff Ring - Dark ORANGE
+    "L3": "#FFD700",  # Pyroclastics - GOLD
+    "L4": "#00CED1",  # Sandstone - Dark TURQUOISE
+    "L5": "#4169E1",  # Shale 1 - Royal BLUE
+    "L6": "#32CD32",  # Sill - Lime GREEN
+    "L7": "#8A2BE2",  # Shale 2 - Blue VIOLET
+    "L8": "#FF69B4",  # Sandstone - Hot PINK
+    "L9": "#CD853F",  # Tillite - Peru BROWN
+    "L10": "#2F4F4F",  # Quartzite - Dark SLATE GRAY
+    "L11": "#DAA520",  # Schist - Goldenrod
+    "L12": "#C0C0C0",  # Gneiss - SILVER
+    "L13": "#A0522D",  # Granite - Sienna BROWN
+}
+
+# Define the coordinate system
+x0, x1, x2 = 0, 3, 6
+y = list(range(28))  # y0 to y27
+
+# Define lithology sequence: (y_bottom, y_top, label)
+lithology_sequence = [
+    (y[1], y[2], "L13"),  # Granite
+    (y[2], y[3], "L12"),  # Gneiss
+    (y[3], y[4], "L11"),  # Schist
+    (y[4], y[5], "L10"),  # Quartzite
+    (y[5], y[6], "L9"),  # Tillite
+    (y[6], y[7], "L8"),  # Sandstone
+    (y[7], y[8], "L7"),  # Shale 2
+    (y[8], y[9], "L6"),  # Sill
+    (y[9], y[10], "L5"),  # Shale 1
+    (y[10], y[11], "L4"),  # Sandstone
+    (y[11], y[12], "L3"),  # Pyroclastics
+    (y[12], y[13], "L2"),  # Tuff Ring (below L1)
+    (y[13], y[15], "L1"),  # Epiclastics (KIMBERLITE CRATER FACIES)
+    (y[15], y[16], "L2"),  # Tuff Ring (above L1)
+    (y[16], y[17], "L3"),  # Pyroclastics
+    (y[17], y[18], "L4"),  # Sandstone
+    (y[18], y[19], "L5"),  # Shale 1
+    (y[19], y[20], "L6"),  # Sill
+    (y[20], y[21], "L7"),  # Shale 2
+    (y[21], y[22], "L8"),  # Sandstone
+    (y[22], y[23], "L9"),  # Tillite
+    (y[23], y[24], "L10"),  # Quartzite
+    (y[24], y[25], "L11"),  # Schist
+    (y[25], y[26], "L12"),  # Gneiss
+    (y[26], y[27], "L13"),  # Granite
+]
+
+
+# Function to draw a lithological unit
+def draw_lithology(y_bottom, y_top, label, alpha=0.85):
+    height = y_top - y_bottom
+    color = color_scheme.get(label, "#CCCCCC")
+    rect = Rectangle(
+        (x0, y_bottom),
+        x2 - x0,
+        height,
+        facecolor=color,
+        edgecolor="black",
+        linewidth=1.5,
+        alpha=alpha,
+    )
+    ax.add_patch(rect)
+
+    center_x = x0 + (x2 - x0) / 2
+    center_y = y_bottom + height / 2
+
+    if label == "L1":
+        ax.text(
+            center_x,
+            center_y,
+            f"{label}\n(Epiclastics)",
+            ha="center",
+            va="center",
+            fontsize=11,
+            fontweight="bold",
+            color="white",
+            bbox=dict(boxstyle="round,pad=0.3", facecolor="black", alpha=0.7),
+        )
+    else:
+        if label in ["L4", "L5", "L10", "L1"]:
+            text_color = "white"
+        else:
+            text_color = "black"
+        ax.text(
+            center_x,
+            center_y,
+            label,
+            ha="center",
+            va="center",
+            fontsize=10,
+            fontweight="bold",
+            color=text_color,
+        )
+
+
+# Draw all lithological units
+for y_bottom, y_top, label in lithology_sequence:
+    draw_lithology(y_bottom, y_top, label)
+
+# ============================================================
+# HIGHLIGHT L1 (Epiclastics) with Special Border
+# ============================================================
+l1_y_bottom = y[13]
+l1_y_top = y[15]
+l1_rect = Rectangle(
+    (x0, l1_y_bottom),
+    x2 - x0,
+    l1_y_top - l1_y_bottom,
+    facecolor="none",
+    edgecolor="#FF0000",
+    linewidth=4,
+    linestyle="--",
+)
+ax.add_patch(l1_rect)
+
+# ============================================================
+# DRAW KIMBERLITE PIPE (K) at Centroid (x1, y14)
+# ============================================================
+k_x = x1
+k_y = y[14]
+k_radius = 0.5
+
+k_circle = Circle(
+    (k_x, k_y),
+    k_radius,
+    facecolor="#8B0000",
+    edgecolor="#FF0000",
+    linewidth=3,
+    zorder=10,
+)
+ax.add_patch(k_circle)
+ax.text(
+    k_x,
+    k_y,
+    "K\n💎",
+    ha="center",
+    va="center",
+    fontsize=14,
+    fontweight="bold",
+    color="white",
+)
+
+# ============================================================
+# DRAW FAULT NETWORK (F1-F24) - REGULAR SEQUENCE
+# ============================================================
+fault_color = "#1E3A8A"
+
+# ============================================================
+# FIX: Draw ALL faults F1-F24 in regular sequence
+# ============================================================
+for i in range(1, 25):  # F1 through F24
+    y_pos = y[27 - i]  # F1 at top (y=26), F24 at bottom (y=1)
+
+    # Determine fault style based on position
+    if i in [1, 12, 13, 24]:  # Major faults
+        linewidth = 3.5
+        linestyle = "-"
+        fontsize = 11
+        alpha = 1.0
+        label_offset = 0.3
+    else:  # Intermediate faults
+        linewidth = 1.5
+        linestyle = "--"
+        fontsize = 8
+        alpha = 0.6
+        label_offset = 0.3
+
+    # Draw the fault line
+    ax.plot(
+        [x0, x2],
+        [y_pos, y_pos],
+        color=fault_color,
+        linewidth=linewidth,
+        linestyle=linestyle,
+    )
+
+    # Add label on the right side
+    ax.text(
+        x2 + label_offset,
+        y_pos,
+        f"F{i}",
+        fontsize=fontsize,
+        fontweight="bold" if i in [1, 12, 13, 24] else "normal",
+        color=fault_color,
+        alpha=alpha,
+        va="center",
+    )
+
+# ============================================================
+# DRAW THE FAULT-BOUNDED COMPARTMENT
+# ============================================================
+compartment = Rectangle(
+    (x0, l1_y_bottom),
+    x2 - x0,
+    l1_y_top - l1_y_bottom,
+    facecolor="green",
+    edgecolor="#00AA00",
+    linewidth=3,
+    linestyle="-",
+    alpha=0.08,
+)
+ax.add_patch(compartment)
+
+# ============================================================
+# ADD X AND Y COORDINATE AXES
+# ============================================================
+
+# X-Axis
+ax.axhline(y=-0.5, color="black", linewidth=2, zorder=5)
+ax.annotate(
+    "",
+    xy=(7.5, -0.5),
+    xytext=(-0.5, -0.5),
+    arrowprops=dict(arrowstyle="->", color="black", linewidth=2),
+)
+ax.text(7.8, -0.5, "X", fontsize=14, fontweight="bold", ha="center", va="center")
+
+# X-axis ticks
+x_ticks = [x0, x1, x2]
+x_labels = ["x₀ = 0", "x₁ = 3", "x₂ = 6"]
+for xtick, xlabel in zip(x_ticks, x_labels):
+    ax.plot([xtick, xtick], [-0.7, -0.3], color="black", linewidth=1.5)
+    ax.text(xtick, -1.2, xlabel, ha="center", va="top", fontsize=10, fontweight="bold")
+
+# Y-Axis
+ax.axvline(x=-0.5, color="black", linewidth=2, zorder=5)
+ax.annotate(
+    "",
+    xy=(-0.5, 28),
+    xytext=(-0.5, -0.5),
+    arrowprops=dict(arrowstyle="->", color="black", linewidth=2),
+)
+ax.text(-1.0, 28.5, "Y", fontsize=14, fontweight="bold", ha="center", va="center")
+
+# Y-axis ticks
+y_ticks = [y[0], y[5], y[10], y[13], y[14], y[15], y[20], y[25], y[27]]
+y_labels = [
+    "y₀=0",
+    "y₅=5",
+    "y₁₀=10",
+    "y₁₃=13",
+    "y₁₄=14",
+    "y₁₅=15",
+    "y₂₀=20",
+    "y₂₅=25",
+    "y₂₇=27",
+]
+for ytick, ylabel in zip(y_ticks, y_labels):
+    ax.plot([-0.7, -0.3], [ytick, ytick], color="black", linewidth=1.5)
+    ax.text(-1.2, ytick, ylabel, ha="right", va="center", fontsize=9, fontweight="bold")
+
+# Grid
+for xtick in np.linspace(0, 6, 13):
+    ax.axvline(
+        x=xtick, ymin=0, ymax=1, color="gray", linewidth=0.3, alpha=0.15, zorder=1
+    )
+for ytick in range(0, 28):
+    ax.axhline(
+        y=ytick, xmin=0, xmax=1, color="gray", linewidth=0.3, alpha=0.15, zorder=1
+    )
+
+# ============================================================
+# COMPREHENSIVE LEGEND
+# ============================================================
+
+# Create legend elements - LITHOLOGICAL UNITS
+legend_elements = []
+
+# Add L1-L13 with their colors
+for label in [
+    "L1",
+    "L2",
+    "L3",
+    "L4",
+    "L5",
+    "L6",
+    "L7",
+    "L8",
+    "L9",
+    "L10",
+    "L11",
+    "L12",
+    "L13",
+]:
+    color = color_scheme.get(label, "#CCCCCC")
+    name_map = {
+        "L1": "Epiclastics (Kimberlite Crater) ★",
+        "L2": "Tuff Ring",
+        "L3": "Pyroclastics",
+        "L4": "Sandstone",
+        "L5": "Shale 1",
+        "L6": "Sill",
+        "L7": "Shale 2",
+        "L8": "Sandstone",
+        "L9": "Tillite",
+        "L10": "Quartzite",
+        "L11": "Schist",
+        "L12": "Gneiss",
+        "L13": "Granite",
+    }
+    patch = patches.Patch(
+        facecolor=color,
+        edgecolor="black",
+        label=f"{label}: {name_map.get(label, label)}",
+    )
+    legend_elements.append(patch)
+
+# Add STRUCTURAL ELEMENTS
+legend_elements.append(
+    patches.Patch(
+        facecolor="none",
+        edgecolor=fault_color,
+        linewidth=3.5,
+        label="Major Faults (F1, F12, F13, F24)",
+    )
+)
+legend_elements.append(
+    patches.Patch(
+        facecolor="none",
+        edgecolor=fault_color,
+        linewidth=1.5,
+        linestyle="--",
+        label="Intermediate Faults (F2-F11, F14-F23)",
+    )
+)
+legend_elements.append(
+    patches.Patch(
+        facecolor="green",
+        alpha=0.15,
+        edgecolor="#00AA00",
+        linewidth=3,
+        label="Fault-Bounded Compartment",
+    )
+)
+legend_elements.append(
+    patches.Patch(
+        facecolor="none",
+        edgecolor="#FF0000",
+        linewidth=4,
+        linestyle="--",
+        label="L1 Boundary (Epiclastics)",
+    )
+)
+
+# Add TARGET ELEMENT
+legend_elements.append(
+    patches.Patch(
+        facecolor="#8B0000",
+        edgecolor="#FF0000",
+        label="K: Kimberlite Pipe (Diamond) 💎",
+    )
+)
+
+# Add COORDINATE SYSTEM
+legend_elements.append(
+    patches.Patch(
+        facecolor="yellow",
+        alpha=0.3,
+        edgecolor="orange",
+        linewidth=2,
+        label="Centroid Point (x₁, y₁₄)",
+    )
+)
+
+# ============================================================
+# CREATE THE LEGEND
+# ============================================================
+
+legend = ax.legend(
+    handles=legend_elements,
+    loc="center left",
+    bbox_to_anchor=(1.02, 0.4),
+    fontsize=8,
+    title="LEGEND",
+    title_fontsize=12,
+    framealpha=0.95,
+    edgecolor="black",
+    facecolor="white",
+    handlelength=2.5,
+    handleheight=1.5,
+    columnspacing=0.5,
+)
+
+# Make legend title bold
+legend.get_title().set_fontweight("bold")
+
+# ============================================================
+# ADD TITLE AND ANNOTATIONS
+# ============================================================
+ax.set_title(
+    "ZEYBEK-3 Model: Idealized Geological Map\n"
+    "Fault-Controlled Kimberlite Pipe in a Craton",
+    fontsize=18,
+    fontweight="bold",
+    pad=25,
+)
+
+ax.text(
+    x1,
+    28.2,
+    "Distinct Lithological Units (L1-L13) with Unique Colors",
+    fontsize=12,
+    ha="center",
+    style="italic",
+    color="#555555",
+)
+
+# ============================================================
+# ADD RULE ANNOTATION
+# ============================================================
+rule_text = "CORE RULE:\n"
+rule_text += "IF L1 (Epiclastics) is fault-bounded by F12 and F13\n"
+rule_text += "THEN K is located at the centroid (x₁, y₁₄)\n"
+rule_text += "where x₁ = (x₀ + x₂)/2 = (0+6)/2 = 3\n"
+rule_text += "and y₁₄ = (y₁₃ + y₁₅)/2 = (13+15)/2 = 14"
+
+ax.annotate(
+    rule_text,
+    xy=(k_x, k_y),
+    xycoords="data",
+    xytext=(x2 + 3.0, k_y + 4),
+    fontsize=10,
+    fontweight="bold",
+    bbox=dict(
+        boxstyle="round,pad=0.7",
+        facecolor="yellow",
+        alpha=0.85,
+        edgecolor="orange",
+        linewidth=2,
+    ),
+    arrowprops=dict(
+        arrowstyle="->", connectionstyle="arc3,rad=0.2", color="red", linewidth=2.5
+    ),
+)
+
+# ============================================================
+# COORDINATE LABELS FOR KEY POINTS
+# ============================================================
+# L1 corner coordinates
+ax.text(
+    x0 - 0.3,
+    y[13] - 0.3,
+    f"({x0}, {y[13]})",
+    fontsize=8,
+    color="darkgreen",
+    ha="right",
+    va="top",
+)
+ax.text(
+    x2 + 0.3,
+    y[15] + 0.3,
+    f"({x2}, {y[15]})",
+    fontsize=8,
+    color="darkgreen",
+    ha="left",
+    va="bottom",
+)
+
+# Kimberlite Pipe K coordinates
+ax.text(
+    k_x + 0.8,
+    k_y + 0.3,
+    f"K ({k_x}, {k_y})",
+    fontsize=10,
+    fontweight="bold",
+    color="darkred",
+    bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8),
+)
+
+# ============================================================
+# FINAL FORMATTING
+# ============================================================
+ax.set_xlabel(
+    "X Coordinate (East / Horizontal Distance)", fontsize=13, fontweight="bold"
+)
+ax.set_ylabel(
+    "Y Coordinate (North / Stratigraphic Depth / Elevation)",
+    fontsize=13,
+    fontweight="bold",
+)
+
+ax.set_xlim(-2.5, 8.5)
+ax.set_ylim(-1.5, 28.5)
+
+ax.set_xticks([])
+ax.set_yticks([])
+
+plt.tight_layout()
+
+# ============================================================
+# SAVE FIGURES
+# ============================================================
+plt.savefig(
+    "ZEYBEK3_Figure1_With_Legend.png", dpi=300, bbox_inches="tight", facecolor="white"
+)
+plt.savefig("ZEYBEK3_Figure1_With_Legend.pdf", bbox_inches="tight", facecolor="white")
+
+plt.show()
+
+# ============================================================
+# PRINT SUMMARY
+# ============================================================
+print("=" * 70)
+print("ZEYBEK-3 MODEL FIGURE 1 - WITH COMPLETE LEGEND")
+print("=" * 70)
+print("✓ Comprehensive legend with all elements")
+print("✓ Lithological Units (L1-L13) with distinct colors")
+print("✓ Structural Elements (Faults, Compartment, Boundaries)")
+print("✓ Target Element (Kimberlite Pipe K)")
+print("✓ Coordinate System (X and Y axes)")
+print("✓ Centroid point highlighted")
+print("✓ Regular fault sequence F1-F24 displayed")
+print("")
+print("Legend Contents:")
+print("  ■ L1: Epiclastics (Kimberlite Crater) ★")
+print("  ■ L2-L13: All lithological units with colors")
+print("  ─── Major Faults (F1, F12, F13, F24)")
+print("  ─ ─ Intermediate Faults (F2-F11, F14-F23)")
+print("  ░░░ Fault-Bounded Compartment")
+print("  ● K: Kimberlite Pipe (Diamond) 💎")
+print("  █ Centroid Point (x₁, y₁₄)")
+print("")
+print("Fault Sequence (Top to Bottom):")
+print("  F1 (y=26) - MAJOR")
+for i in range(2, 12):
+    print(f"  F{i} (y={27 - i}) - intermediate")
+print("  F12 (y=15) - MAJOR ★ Bounds L1")
+print("  F13 (y=13) - MAJOR ★ Bounds L1")
+for i in range(14, 24):
+    print(f"  F{i} (y={27 - i}) - intermediate")
+print("  F24 (y=1) - MAJOR")
+print("")
+print("Output Files:")
+print("  - ZEYBEK3_Figure1_With_Legend.png")
+print("  - ZEYBEK3_Figure1_With_Legend.pdf")
+print("=" * 70)
+
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 """
 ZEYBEK-3 Model: A Rule-Based Expert System for Geometry-Driven Targeting of Fault-Controlled Kimberlite Pipes
 Author: Mutlu ZEYBEK
